@@ -1,0 +1,28 @@
+version: "3.3"
+services:
+  worker-ray:
+    build: .
+    image: "afreydev/ray-cluster:latest"
+    command: ray start --head --num-gpus 1 --dashboard-host 0.0.0.0 --block
+    volumes:
+      - ./morpheus-server:/opt/api
+      - ./models:/mnt/
+    ports:
+      - "8000:8000"
+      - "8265:8265"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+
+  worker-ray-deployer:
+    image: "afreydev/ray-cluster:latest"
+    command: bash -c "sleep 5 && ray job submit -- serve deploy app.yaml"
+    environment:
+      - RAY_ADDRESS=http://worker-ray:8265
+    depends_on:
+      worker-ray:
+        condition: service_started

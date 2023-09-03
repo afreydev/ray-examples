@@ -1,0 +1,18 @@
+version: "3.3"
+services:
+  serve:
+    build: .
+    image: morpheus-serve:latest
+    command: serve run models:deployment --host 0.0.0.0
+    volumes:
+      - ./models:/mnt/
+    ports:
+      - "8000:8000"
+      - "8265:8265"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]

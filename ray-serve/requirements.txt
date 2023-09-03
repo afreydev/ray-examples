@@ -1,0 +1,7 @@
+ray[default]
+torch
+gradio
+diffusers
+transformers
+accelerate
+xformers

@@ -1,10 +1,13 @@
 import ray
 import torch
-import gradio as gr
+import io
 from diffusers import StableDiffusionPipeline, DPMSolverMultistepScheduler
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
+from ray.util.state import summarize_tasks
 from ray import serve
-from ray.serve.gradio_integrations import GradioServer
 
+app = FastAPI()
 
 @ray.remote(num_gpus=1)
 def image(prompt):
@@ -26,21 +29,35 @@ def image(prompt):
         ).images[0]
     return r_image
 
-example_input = "a small lion fighting with a t-rex"
 
-def gradio_stable_diff_builder():
+@serve.deployment(num_replicas=1, route_prefix="/")
+@serve.ingress(app)
+class APIIngress:
+    def __init__(self) -> None:
+        print("Initializing")
 
-    def image_sd(prompt):
-        sd_image = image.remote(prompt)
-        r_image = ray.get(sd_image)
-        return r_image
+    @app.get("/imagine")
+    async def generate(self, prompt: str, img_size: int = 512):
+        assert len(prompt), "prompt parameter cannot be empty"
+        future = image.remote(prompt)
+        result = ray.get(future)
+        buf = io.BytesIO()
+        result.save(buf, format='JPEG', quality=100)
+        buf.seek(0) # important here!
+        return StreamingResponse(buf, media_type="image/jpeg")
 
-    return gr.Interface(
-        fn=image_sd,
-        inputs=[gr.Textbox(value=example_input, label="Input prompt")],
-        outputs=[gr.Image(label="Image", width=250)],
-    )
+    @app.get("/pending-tasks")
+    async def pending_tasks(self):
+        summary = summarize_tasks()
+        pending = 0
+        if "cluster" in summary and "summary" in summary["cluster"]:
+            tasks = summary["cluster"]["summary"]
+            for key in tasks:
+                task = tasks[key]
+                if task["type"] == "NORMAL_TASK":
+                    for task_type in task["state_counts"]:
+                        if task_type in self.task_types:
+                            pending += task["state_counts"][task_type]
+        return pending
 
-app = GradioServer.options(ray_actor_options={"num_cpus": 2}).bind(
-    gradio_stable_diff_builder
-)
+deployment = APIIngress.bind()

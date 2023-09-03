@@ -1,3 +1,5 @@
+# This file was generated using the `serve build` command on Ray v2.6.1.
+
 proxy_location: EveryNode
 
 http_options:
@@ -12,7 +14,7 @@ applications:
 
   route_prefix: /
 
-  import_path: models.deployment
+  import_path: models:deployment
 
   runtime_env: {}
 

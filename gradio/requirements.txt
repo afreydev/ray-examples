@@ -1,0 +1,6 @@
+torch
+gradio
+diffusers
+transformers
+accelerate
+xformers

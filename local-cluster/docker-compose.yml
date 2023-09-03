@@ -1,20 +1,15 @@
 version: "3.3"
 services:
   worker-ray:
-    build: ./morpheus-worker/ray
-    image: morpheus-worker:latest
+    build: .
+    image: morpheus-worker-local:latest
     command: bash start.sh "rtx4090"
     ports:
       - "8000:8000"
       - "8265:8265"
-    volumes:
-      - sd_model:/mnt/
-    depends_on:
-      api:
-        condition: service_started
 
   worker-ray-deployer:
-    image: morpheus-worker:latest
+    image: morpheus-worker-local:latest
     command: bash -c "sleep 5 && ray job submit -- serve deploy models.yaml"
     environment:
       - RAY_ADDRESS=http://worker-ray:8265
@@ -23,10 +18,8 @@ services:
         condition: service_started
 
   worker-ray-worker:
-    image: morpheus-worker:latest
-    command: ray start --num-gpus=2 --address='172.18.0.4:6379' --block
-    volumes:
-      - sd_model:/mnt/
+    image: morpheus-worker-local:latest
+    command: ray start --num-gpus=5 --address='worker-ray:6379' --block
     depends_on:
       worker-ray:
         condition: service_started

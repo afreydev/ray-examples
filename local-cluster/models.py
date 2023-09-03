@@ -3,18 +3,22 @@ import uuid
 import time
 from fastapi import FastAPI
 from fastapi.responses import Response
-from ray.util.state import get_task
 from ray.util.state import summarize_tasks
 from ray import serve
 
 app = FastAPI()
 
-@ray.remote(resources={"rtx4090":1})
-def image(prompt):
-    task_id = ray.get_runtime_context().get_task_id()
-    print(f"task: {task_id}")
-    print(f"Generating image: {prompt}")
+@ray.remote(resources={"rtx4090": 1})
+def special_device(prompt):
+    print(f"Running in special device: {prompt}")
     time.sleep(60)
+    return "finished!"
+
+@ray.remote(num_gpus=1)
+def running_in_gpu(prompt):
+    print(f"Running in the gpu: {prompt}")
+    result = ray.get(special_device.remote(prompt))
+    print(result) 
 
 @serve.deployment(num_replicas=1, route_prefix="/")
 @serve.ingress(app)
@@ -32,14 +36,8 @@ class APIIngress:
     @app.get("/imagine")
     async def generate(self, prompt: str, img_size: int = 512):
         assert len(prompt), "prompt parameter cannot be empty"
-        image.remote(prompt)
+        running_in_gpu.remote(prompt)
         return Response(content="ok")
-    
-    # https://docs.ray.io/en/latest/ray-observability/user-guides/cli-sdk.html#state-api-overview-ref
-    @app.get("/task")
-    async def task_status(self, task_id: str):
-        task = get_task(task_id)
-        return Response(content=task.state)
 
     @app.get("/pending-tasks")
     async def pending_tasks(self):

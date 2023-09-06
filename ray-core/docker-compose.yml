@@ -1,0 +1,18 @@
+version: "3.3"
+services:
+  worker-ray:
+    build: .
+    image: morpheus-worker-core-local:latest
+    command: bash start.sh "rtx3080"
+    volumes:
+      - ./src:/mnt
+    ports:
+      - "8000:8000"
+      - "8265:8265"
+
+  worker-ray-worker:
+    image: morpheus-worker-core-local:latest
+    command: ray start --num-gpus=5 --address='worker-ray:6379' --block
+    depends_on:
+      worker-ray:
+        condition: service_started

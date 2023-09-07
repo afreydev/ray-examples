@@ -3,7 +3,7 @@ services:
   worker-ray:
     build: .
     image: morpheus-worker-local:latest
-    command: bash start.sh "rtx4090"
+    command: bash start.sh "rtx4090" 3
     ports:
       - "8000:8000"
       - "8265:8265"

@@ -30,7 +30,7 @@ def image(prompt):
     return r_image
 
 
-@serve.deployment(num_replicas=1, route_prefix="/")
+@serve.deployment(num_replicas=5, route_prefix="/")
 @serve.ingress(app)
 class APIIngress:
     def __init__(self) -> None:

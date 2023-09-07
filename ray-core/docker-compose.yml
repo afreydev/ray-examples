@@ -3,7 +3,7 @@ services:
   worker-ray:
     build: .
     image: morpheus-worker-core-local:latest
-    command: bash start.sh "rtx3080"
+    command: bash start.sh "rtx3080" 3
     volumes:
       - ./src:/mnt
     ports:

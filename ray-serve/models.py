@@ -35,6 +35,13 @@ def image(prompt):
 class APIIngress:
     def __init__(self) -> None:
         print("Initializing")
+        self.task_types = [
+            "PENDING_OBJ_STORE_MEM_AVAIL",
+            "PENDING_NODE_ASSIGNMENT",
+            "SUBMITTED_TO_WORKER",
+            "PENDING_ARGS_FETCH",
+            "SUBMITTED_TO_WORKER"
+        ]
 
     @app.get("/imagine")
     async def generate(self, prompt: str, img_size: int = 512):
